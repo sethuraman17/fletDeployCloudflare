@@ -72,7 +72,7 @@ def process_video():
                 active_letter = current_set[letter_index]
 
                 if active_letter == "I":
-                    exec(open("testing.py").read())
+                    pass
                 elif active_letter == "Don't":
                     current_set = key_set_mapping[2]
                     letter_index = 0
