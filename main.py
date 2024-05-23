@@ -5,7 +5,10 @@ from cvzone.FaceMeshModule import FaceMeshDetector
 from math import hypot
 import threading
 import time
+import base64
+from io import BytesIO
 
+# Key sets
 keys_set = {0: "I", 1: "Don't", 2: "ok!", 3: "Yes", 4: "No",
             5: "car", 6: "want", 7: "Help", 8: "Come", 9: "Water",
             10: "am", 11: "Go", 12: "ok!", 13: "need", 14: "Fine"}
@@ -31,21 +34,21 @@ text = ""
 current_set = keys_set
 running = True
 
-def update_ui(page, output_text, keyboard):
+def update_ui(page, output_text, keyboard, webcam_image):
     global running, text, letter_index
     while running:
         time.sleep(0.1)
         output_text.value = text
         for i in range(15):
             key_text = current_set[i]
-            keyboard.controls[i].content.value = key_text  # Update the key text
+            keyboard.controls[i].content.value = key_text
             if i == letter_index:
                 keyboard.controls[i].bgcolor = ft.colors.WHITE
             else:
                 keyboard.controls[i].bgcolor = ft.colors.BLUE
         page.update()
 
-def process_video():
+def process_video(page, webcam_image):
     global frames, blink_frame, letter_index, text, current_set, running
     cap = cv2.VideoCapture(0)
     detector = FaceMeshDetector(maxFaces=1, minDetectionCon=0.8)
@@ -89,7 +92,17 @@ def process_video():
                 letter_index = (letter_index + 1) % 15
                 frames = 0
 
+        # Convert frame to JPEG and base64 encode it
+        _, buffer = cv2.imencode('.jpg', img)
+        jpg_as_text = base64.b64encode(buffer).decode('utf-8')
+        img_data_url = f"data:image/jpeg;base64,{jpg_as_text}"
+
+        # Update the Flet image component
+        webcam_image.src_base64 = img_data_url
+        page.update()
+
     cap.release()
+    cv2.destroyAllWindows()
 
 def main(page: ft.Page):
     global running
@@ -109,10 +122,12 @@ def main(page: ft.Page):
         )
         keyboard.controls.append(key)
 
-    page.add(output_text, keyboard)
+    webcam_image = ft.Image()
 
-    threading.Thread(target=update_ui, args=(page, output_text, keyboard), daemon=True).start()
-    threading.Thread(target=process_video, daemon=True).start()
+    page.add(output_text, keyboard, webcam_image)
+
+    threading.Thread(target=update_ui, args=(page, output_text, keyboard, webcam_image), daemon=True).start()
+    threading.Thread(target=process_video, args=(page, webcam_image), daemon=True).start()
 
     def on_close(e):
         global running
