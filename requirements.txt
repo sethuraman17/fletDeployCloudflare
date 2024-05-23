@@ -1,6 +1,6 @@
 flet
 Pillow
 numpy
-cvzone==1.6.1
-opencv-python==4.9.0.80
-opencv-python-headless==4.9.0.80
+cvzone
+opencv-python
+opencv-python-headless
