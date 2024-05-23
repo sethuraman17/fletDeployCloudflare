@@ -6,7 +6,10 @@ from math import hypot
 import threading
 import time
 import base64
-from io import BytesIO
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
 
 # Key sets
 keys_set = {0: "I", 1: "Don't", 2: "ok!", 3: "Yes", 4: "No",
@@ -37,6 +40,7 @@ running = True
 def update_ui(page, output_text, keyboard, webcam_image):
     global running, text, letter_index
     while running:
+        logging.debug("Updating UI...")
         time.sleep(0.1)
         output_text.value = text
         for i in range(15):
@@ -54,7 +58,12 @@ def process_video(page, webcam_image):
     detector = FaceMeshDetector(maxFaces=1, minDetectionCon=0.8)
 
     while running:
+        logging.debug("Capturing frame...")
         success, img = cap.read()
+        if not success:
+            logging.error("Failed to capture image from webcam.")
+            continue
+
         frames += 1
         img, faces = detector.findFaceMesh(img, draw=False)
         if faces:
@@ -73,6 +82,7 @@ def process_video(page, webcam_image):
                 blink_frame += 1
                 frames -= 1
                 active_letter = current_set[letter_index]
+                logging.debug(f"Active letter: {active_letter}")
 
                 if active_letter == "I":
                     exec(open("testing.py").read())
@@ -132,6 +142,7 @@ def main(page: ft.Page):
     def on_close(e):
         global running
         running = False
+        logging.info("Application is closing...")
 
     page.on_close = on_close
 
